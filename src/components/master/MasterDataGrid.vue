@@ -50,10 +50,11 @@
                                     >
                                         <v-col class="px-0 py-0">
                                             <v-chip
-                                                    :class="'py-0 chip v-picker--full-width justify-center ' +getColor(day,time)"
+                                                    :class="'py-0 chip v-picker--full-width justify-center '+getColor(getScheduleArrayFiltered[day][time])"
                                                     @click="select(time,day)"
                                                     label
                                                     outlined
+
                                                     v-html="parseInfoArrayToDisplay(getScheduleArrayFiltered[day][time])"
                                             >
                                             </v-chip>
@@ -67,34 +68,24 @@
                 </v-col>
             </v-row>
         </v-container>
-        <UserCellDetails
+        <MasterCellDetails
                 :isOpened="isCellDetailsOpened"
                 :selectedDate="selectedDate"
                 :selectedTime="selectedTime"
-                @declineRec="declineRec"
-                @signUp="signUp"
                 @toggle="toggleCellDetails"
                 v-model="this.selected"
         >
-        </UserCellDetails>
-        <v-snackbar
-                :timeout="5000"
-                :top="true"
-                :vertical="true"
-                color="orange"
-                v-model="isNotificationVisible"
-        >{{notifText}}
-        </v-snackbar>
+        </MasterCellDetails>
     </v-main>
 </template>
 <script>
   import {mapGetters} from "vuex";
-  import {DECLINE_REC, FETCH_SCHEDULE} from "../../vuex/actions/schedule";
-  import UserCellDetails from "./UserCellDetails";
+  import {FETCH_SCHEDULE} from "../../vuex/actions/schedule";
+  import MasterCellDetails from "./MasterCellDetails";
 
   export default {
-    name: "UserDataGrid",
-    components: {UserCellDetails},
+    name: "MasterDataGrid",
+    components: {MasterCellDetails},
     async mounted() {
       await this.$store.dispatch(FETCH_SCHEDULE);
     },
@@ -124,115 +115,41 @@
 
         selectedDate: null,
         selectedTime: null,
-        colorMatrix: [],
       }
     },
     methods: {
-      async declineRec(assignmentUUID) {
-        let payload = {
-          assignmentUUID: assignmentUUID
+      getColor(arrData) {
+        if (!arrData.length) {
+          return "";
         }
-        await this.$store.dispatch(DECLINE_REC, {payload});
-      },
-      signUp(rec) {
-
-        this.$emit("signUp",rec);
+        let info = arrData[0];
+        if (info.customer) {
+          return "green";
+        }else{
+          return "blue";
+        }
       },
       toggleCellDetails() {
         this.isCellDetailsOpened = !this.isCellDetailsOpened;
       },
       select(time, date) {
-        console.log(this.getFilterByMaster);
-        console.log(this.getFilterByService);
-        if (this.getScheduleArrayFiltered[date][time].length) {
-          if (this.isCellBusyCurrent(date, time)) {
-            this.toggleCellDetails();
-            this.selectedTime = time;
-            this.selectedDate = date;
-          } else {
-            if (this.getFilterByMaster && this.getFilterByService) {
-              this.toggleCellDetails();
-              this.selectedTime = time;
-              this.selectedDate = date;
-            } else {
-              this.toggleNotification();
-            }
-          }
-        }
-      },
-      toggleNotification() {
-        if (!this.getFilterByMaster && !this.getFilterByService) {
-          this.notifText = "Выберите мастера и услугу"
-        } else if (!this.getFilterByMaster) {
-          this.notifText = "Выберите мастера"
-        } else if (!this.getFilterByService) {
-          this.notifText = "Выберите услугу"
-        }
-        this.isNotificationVisible = true;
-      },
-      isCellBusyCurrent(date, time) {
-        let cell = this.getScheduleArrayFiltered[date][time];
-        let rec = cell.filter(rec => rec.cellState === "BUSY_CURRENT")[0]
-        if (rec) {
-          return true
-        }
-        return false;
+        this.selectedTime = time;
+        this.selectedDate = date;
+        this.toggleCellDetails();
       },
       parseInfoArrayToDisplay(arrData) {
-        if (arrData.length !== 0) {
-          let takenInfo = {};
-          let isTakenByCurUser = false;
-          let masterCount = 0;
-          let freeCount = 0;
-          if (arrData.length === 1) {
-            let rec = arrData[0];
-            let res;
-            console.log(rec)
-            switch (rec.cellState) {
-              case "BUSY":
-                res = "Мастер: " + this.getMastersName(rec.master) + "<br>" + "Занят"
-                break;
-              case "BUSY_CURRENT":
-                res = "Вы записаны к мастеру " + "<br>" + this.getMastersName(rec.master)
-                break;
-              case "FREE":
-                res = "Мастер: " + this.getMastersName(rec.master) + "<br>" + "Свободен"
-                break
-            }
-            return res;
-          } else {
-            arrData.forEach(rec => {
-              if (rec.master) {
-                masterCount++
-              }
-              if (rec.cellState === "BUSY_CURRENT") {
-                isTakenByCurUser = true;
-                takenInfo.master = rec.master
-              } else if (rec.cellState === "FREE") {
-                freeCount++;
-              }
-            });
-          }
-          if (isTakenByCurUser) {
-            return "Вы записаны к " + this.getMastersName(takenInfo.master)
-          }
-          return "Мастеров: " + masterCount + "<br>" + "Свободно: " + freeCount;
+        if (arrData.length === 0) {
+          return "";
         }
-        return "";
-
-      },
-      getColor(day, time) {
-        let data = this.parseInfoArrayToDisplay(this.getScheduleArrayFiltered[day][time]);
-        if (data.includes("Свободно: 0") || data.includes("Занят")) {
-          return "red"
+        let info = arrData[0];
+        if (info.customer) {
+          let customer = info.customer;
+          let customerText = (customer.firstname && customer.lastname) ? customer.lastname.concat(" ").concat(customer.firstname) : customer.username;
+          customerText = customerText.concat("<br>").concat(info.service.name)
+          return customerText;
+        } else {
+          return "Свободен"
         }
-        if (data.includes("Вы записаны")) {
-          return "green";
-        }
-        return "";
-      },
-      getMastersName(master) {
-        return master.lastname + " " + master.firstname;
       },
     },
 

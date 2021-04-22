@@ -3,11 +3,14 @@
         <v-container>
             <v-row>
                 <v-col>
-                    <v-select deletable-chips
-                            :items="this.getMasters"
-                            @change="setFilterByMaster"
-                            item-value="id"
-                            v-model="selectedMaster"
+                    <v-select :items="this.getMasters"
+                              outlined
+                              dense
+                              @change="setFilterByMaster"
+                              deletable-chips
+                              item-value="id"
+                              v-model="selectedMaster"
+                              placeholder="Мастер"
                     >
                         <template v-slot:item="{ item }">
                             {{item.lastname+" "+item.firstname}}
@@ -19,21 +22,42 @@
                             <v-btn @click="(selectedMaster=null)&setFilterByMaster(null)">Очистить</v-btn>
                         </template>
                     </v-select>
-
+                </v-col>
+                <v-col>
+                    <v-select :items="this.getServices"
+                              outlined
+                              dense
+                              @change="setFilterByService"
+                              deletable-chips
+                              item-value="id"
+                              v-model="selectedService"
+                              placeholder="Услуга"
+                    >
+                        <template v-slot:item="{ item }">
+                            {{item.name}}
+                        </template>
+                        <template v-slot:selection="{ item }">
+                            {{item.name}}
+                        </template>
+                        <template v-slot:append-item>
+                            <v-btn @click="(selectedService=null)&setFilterByService(null)">Очистить</v-btn>
+                        </template>
+                    </v-select>
                 </v-col>
             </v-row>
             <v-row>
                 <v-col>
-                    <DatePicker @change="log" v-model="firstDate"></DatePicker>
+                    <DatePicker :min="today" v-model="firstDate" :label="`Дата: от`"></DatePicker>
                 </v-col>
                 <v-col>
-                    <DatePicker :min="firstDate" v-model="lastDate"></DatePicker>
+                    <DatePicker :min="firstDate" v-model="lastDate" :label="`Дата: до`"></DatePicker>
                 </v-col>
             </v-row>
             <v-row>
                 <v-col>
-                    <DataGrid
-                    ></DataGrid>
+                    <UserDataGrid
+                        @signUp="signUp"
+                    ></UserDataGrid>
                 </v-col>
             </v-row>
         </v-container>
@@ -42,16 +66,17 @@
 </template>
 
 <script>
-  import DataGrid from "../components/DataGrid";
   import {mapGetters} from "vuex";
   import {FETCH_MASTERS} from "../vuex/actions/master";
   import {FETCH_SERVICES} from "../vuex/actions/service";
   import DatePicker from "../components/DatePicker";
-  import {CHANGE_FIRST_DAY, CHANGE_LAST_DAY} from "../vuex/actions/schedule";
+  import {CHANGE_FIRST_DAY, CHANGE_LAST_DAY, USER_ASSIGN} from "../vuex/actions/schedule";
+  import UserDataGrid from "../components/user/UserDataGrid";
+  import dateUtils from "../utils/dateUtils";
 
   export default {
-    name: "Schedule",
-    components: {DatePicker, DataGrid},
+    name: "UserSchedule",
+    components: {UserDataGrid, DatePicker},
     async mounted() {
       await this.$store.dispatch(FETCH_MASTERS);
       await this.$store.dispatch(FETCH_SERVICES);
@@ -59,10 +84,11 @@
     data() {
       return {
         selectedMaster: null,
+        selectedService: null,
       }
     },
     computed: {
-      ...mapGetters(["getMasters", "isLoading"]),
+      ...mapGetters(["getMasters", "isLoading","getServices"]),
       firstDate: {
         get() {
           return this.$store.state.schedule.data.dateLine[0]
@@ -70,7 +96,6 @@
         set(value) {
           this.$store.dispatch(CHANGE_FIRST_DAY, {value})
         }
-
       },
       lastDate: {
         get() {
@@ -79,14 +104,27 @@
         set(value) {
           this.$store.dispatch(CHANGE_LAST_DAY, {value})
         }
+      },
+      today(){
+        return dateUtils.dateToYYYYMMDD(new Date());
       }
     },
     methods: {
       setFilterByMaster(master) {
         this.$store.commit("setFilterByMaster", master)
       },
+      setFilterByService(service) {
+        this.$store.commit("setFilterByService", service)
+      },
       log(a) {
         console.log(a)
+      },
+      async signUp(rec){
+
+        let payload = {};
+        payload.info = rec;
+        payload.service = this.selectedService;
+        await this.$store.dispatch(USER_ASSIGN,{payload});
       }
     },
   }

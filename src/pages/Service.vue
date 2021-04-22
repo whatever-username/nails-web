@@ -1,10 +1,20 @@
 <template>
-    $END$
+    <v-main>
+        <v-container>
+            <v-row>
+                <v-col>
+                    <ServicesTable></ServicesTable>
+                </v-col>
+            </v-row>
+        </v-container>
+    </v-main>
 </template>
 
 <script>
+  import ServicesTable from "../components/ServicesTable";
   export default {
-    name: "Service"
+    name: "Service",
+    components: {ServicesTable}
   }
 </script>
 

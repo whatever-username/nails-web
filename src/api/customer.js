@@ -1,8 +1,8 @@
 import axios from "axios"
 import {BACKEND} from "../cfg";
-function fetchMasters() {
+function fetchCustomers() {
   return new Promise((resolve, reject) => {
-    axios.get(BACKEND+"/masters")
+    axios.get(BACKEND+"/customers")
       .then((result) => {
         resolve(result.data);
       })
@@ -15,5 +15,5 @@ function fetchMasters() {
 }
 
 export default {
-  fetchMasters
+  fetchCustomers
 }

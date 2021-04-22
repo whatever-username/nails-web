@@ -1,5 +1,5 @@
 <template>
-    $END$
+    <h1>Добро </h1>
 </template>
 
 <script>

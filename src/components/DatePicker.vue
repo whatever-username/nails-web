@@ -9,12 +9,14 @@
   >
     <template v-slot:activator="{ on }">
       <v-text-field
+              :placeholder="placeholder"
         dense
         outlined
         readonly
+
+              v-model="value"
         v-bind:label=label
         :disabled="readonly"
-        v-bind:value="toRusFormat(value)"
         v-on="on"
         :rules="[notNullRule]"
       >
@@ -43,7 +45,6 @@
 
 <script>
 
-  import dateUtils from "../utils/dateUtils";
 
   export default {
     name: "DatePicker",
@@ -54,9 +55,6 @@
       }
     },
     methods: {
-      toRusFormat(value){
-        return dateUtils.toLocal(value)
-      },
       notNullRule(){
         console.log(this.value)
         if (this.notNull){
@@ -69,7 +67,7 @@
       }
 
     },
-    props: ["label", "value", "max", "min","readonly"]
+    props: ["label", "value", "max", "min","readonly","placeholder"]
   }
 </script>
 
